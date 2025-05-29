@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Peta Surabaya (Gratis dengan Leaflet)</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    #map {
+      height: 90vh;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Peta Surabaya (Klik untuk pilih titik)</h2>
+<div id="map"></div>
+<p id="info" style="font-weight: bold;"></p>
+
+<script>
+    //Latitude: -8.164980, Longitude: 113.715405
+  // Koordinat tengah kota Surabaya
+  const Center = [-8.164980, 113.715405];
+
+  const map = L.map('map').setView(Center, 17);
+
+  // Tambahkan tile dari OpenStreetMap (GRATIS!)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  let marker;
+
+  // Saat user klik di peta
+  map.on('click', function (e) {
+    const lat = e.latlng.lat.toFixed(6);
+    const lng = e.latlng.lng.toFixed(6);
+
+    if (marker) map.removeLayer(marker);
+
+    marker = L.marker([lat, lng]).addTo(map);
+    document.getElementById('info').innerText = `Latitude: ${lat}, Longitude: ${lng}`;
+  });
+</script>
+
+</body>
+</html>
