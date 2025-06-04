@@ -125,7 +125,7 @@ def login(no_hp, password):
                 menu_pembeli(id_akun,nama)
             clear_terminal()
         else:
-            print("Login gagal: Nomor HP atau password salah.")
+            input("Login gagal: Nomor HP atau password salah.")
             kembali()
 
     except Exception as e:
