@@ -218,9 +218,139 @@ def penjualan_hasil_tani():
 def rute_pengiriman():
     print("Menu Rute Pengiriman")
     # Tambahkan logika untuk rute pengiriman
-def pengelolaan_stock():
-    print("Menu Pengelolaan Stock")
-    # Tambahkan logika untuk pengelolaan stock
+
+def selection_sort_by_stok(data, jalan=True):
+    n = len(data)
+    for i in range(n):
+        index_awal = i
+        for j in range(i + 1, n):
+            if jalan:
+                if data[j][2] < data[index_awal][2]:
+                    index_awal = j
+            else:
+                if data[j][2] > data[index_awal][2]:
+                    index_awal = j
+        data[i], data[index_awal] = data[index_awal], data[i]
+    return data
+
+def selection_sort_by_nama(data, jalan1=True):
+    n = len(data)
+    for i in range(n):
+        idx_extreme = i
+        for j in range(i + 1, n):
+            nama_j = data[j][1].lower()
+            nama_extreme = data[idx_extreme][1].lower()
+            if jalan1:
+                if nama_j < nama_extreme:
+                    idx_extreme = j
+            else:
+                if nama_j > nama_extreme:
+                    idx_extreme = j
+        data[i], data[idx_extreme] = data[idx_extreme], data[i]
+    return data
+
+def binary_search_by_nama(data, target):
+    target = target.lower()
+    left = 0
+    right = len(data) - 1
+
+    while left <= right:
+        mid = (left + right) // 2
+        nama_mid = data[mid][1].lower()
+        if nama_mid == target:
+            return mid
+        elif nama_mid < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1
+
+def ambil_semua_data():
+    conn = connect_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM sayur")
+    data = cur.fetchall()
+    cur.close()
+    conn.close()
+    return data
+
+def tampilkan_data(data):
+    print("\n Data Sayur:")
+    print("-" * 50)
+    for row in data:
+        print(f"ID: {row[0]:<3} | Nama: {row[1]:<15} | Stok: {row[2]:<5} | Harga: Rp{row[3]:,.0f}")
+    print("-" * 50)
+
+
+def update_harga_satuan(id_sayur, harga_baru):
+    conn = connect_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("UPDATE sayur SET harga_satuan = %s WHERE id_sayur = %s", (harga_baru, id_sayur))
+        conn.commit()
+        print("✅ Harga berhasil diperbarui.")
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Gagal memperbarui harga: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
+
+def pengelolaan_stok():
+    while True:
+        print("\n==== Menu Pengelolaan Stok Hasil Tani ====")
+        print("1. Tampilkan sayur berdasarkan stok ")
+        print("2. Tampilkan sayur berdasarkan urutan nama")
+        print("3. Cari sayur dan ganti harga ")
+        print("4. Kembali")
+        pilihan = input("Pilih menu (1/2/3/4): ").strip()
+
+        if pilihan == '1':
+            clear_terminal()
+            data = ambil_semua_data()
+            data_sorted = selection_sort_by_stok(data, jalan=True)
+            tampilkan_data(data_sorted)
+            input("\nTekan Enter untuk kembali...")
+            clear_terminal()
+
+        elif pilihan == '2':
+            clear_terminal()
+            data = ambil_semua_data()
+            data_sorted = selection_sort_by_nama(data, jalan1=True)
+            tampilkan_data(data_sorted)
+            input("\nTekan Enter untuk kembali...")
+            clear_terminal()
+
+        elif pilihan == '3':
+            clear_terminal()
+            data = ambil_semua_data()
+            data_sorted = selection_sort_by_nama(data, jalan1=True)
+            tampilkan_data(data_sorted)
+
+            target = input("\nMasukkan nama sayur yang ingin dicari: ").strip()
+            index = binary_search_by_nama(data_sorted, target)
+
+            if index != -1:
+                sayur = data_sorted[index]
+                print(f"\n✅ Ditemukan: ID: {sayur[0]}, Nama: {sayur[1]}, Stok: {sayur[2]}, Harga: Rp{sayur[3]:,.0f}")
+                harga_baru = input("Masukkan harga baru: ").strip()
+                if harga_baru.isdigit():
+                    update_harga_satuan(sayur[0], int(harga_baru))
+                else:
+                    print("❌ Harga tidak valid.")
+            else:
+                print("❌ Sayur tidak ditemukan.")
+
+            input("\nTekan Enter untuk kembali...")
+            clear_terminal()
+
+        elif pilihan == '4':
+            clear_terminal()
+            break
+        else:
+            print("❌ Pilihan tidak valid. Silakan pilih 1, 2, 3, atau 4.")
+
 def pencatatan_transaksi():
     print("Menu Pencatatan Transaksi")
     # Tambahkan logika untuk pencatatan transaksi
