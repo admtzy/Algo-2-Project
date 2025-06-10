@@ -202,11 +202,13 @@ def menu_owner(nama):
 def menu_pembeli(id_akun, nama):
     while True :
         clear_terminal()
+        print('\n' + '=' * 20 + f' Halo {nama} selamat datang di Aplikasi Petani!!! ' + '=' * 20 + '\n')
         print('+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+')
         print('|| ^^^ 	     	    MENU PEMBELI             ^^^ ||')
         print('||---------    Silahkan pilih menu      ---------||')
         print('||                1. Beli Hasil Tani             ||')
-        print('||                2. Keluar                      ||')
+        print('||                2. Riwayat Pembelian           ||')
+        print('||                3. Keluar                      ||')
         print('+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+')
         pilihan = input('Silahkan pilih menu: ').strip()
         
@@ -214,6 +216,9 @@ def menu_pembeli(id_akun, nama):
             beli_hasil_tani(id_akun)
             
         elif pilihan == "2":
+            riwayat_pembelian(id_akun)
+            
+        elif pilihan == "3":
             print("Terima kasih telah menggunakan aplikasi ini.")
             clear_terminal()
             break
@@ -224,6 +229,7 @@ def menu_pembeli(id_akun, nama):
 def beli_hasil_tani (id_akun):
     clear_terminal()
     print('\n' + '=' * 20 + ' MENU BELI HASIL TANI ' + '=' * 20 + '\n')
+    ambil_semua_data()
     nama_sayur = input("Masukkan nama sayur: ").strip()
     jumlah_beli = int(input("Masukkan jumlah beli: "))
     
@@ -257,13 +263,71 @@ def beli_hasil_tani (id_akun):
         # max_budget = int(input("Masukkan budget maksimal: "))
     except Exception as e:
         input(f"❌ Terjadi kesalahan: {e}")
+
+        clear_terminal()
         
     finally:
         cur.close()
         conn.close()
 
+def riwayat_pembelian(id_akun):
+    clear_terminal()
+    print('\n' + '=' * 20 + ' RIWAYAT PEMBELIAN ' + '=' * 20 + '\n')
+    # Tambahkan logika untuk menampilkan riwayat pembelian
  
 def penjualan_hasil_tani():
+
+    while True:
+        clear_terminal()
+        print('\n' + '=' * 20 + ' MENU PENJUALAN HASIL TANI ' + '=' * 20 + '\n')
+        ambil_semua_request()
+        pilihan = input("Masukkan id request yang ingin diproses (atau '0' untuk keluar): ").strip()
+        if pilihan == '0':
+            break
+        
+        conn = connect_db()
+        cur = conn.cursor()
+
+        # Periksa apakah ID request valid
+        cur.execute("SELECT * FROM request_pembelian WHERE id_request = %s", (pilihan,))
+        request = cur.fetchone()
+
+        if not request:
+            print(f"\n[!] ID request {pilihan} tidak ditemukan.")
+            input("Tekan Enter untuk lanjut...")
+            cur.close()
+            conn.close()
+            continue
+
+        status_input = input("Masukkan status untuk request ini (K = Kirim / T = Tolak / S = Selesai): ").strip().upper()
+
+        if status_input not in ['K', 'T', 'S']:
+            print("\n⚠️Status tidak valid!!!")
+            kembali()
+            cur.close()
+            conn.close()
+            continue
+
+        elif status_input == 'S':
+            cur.execute(
+                "UPDATE request_pembelian SET status = 'S' WHERE id_request = %s", (pilihan,)
+            )
+            cur.execute(
+                "INSERT INTO transaksi (id_request, tanggal) VALUES (%s, %s)",
+                (pilihan, date.today())
+            )
+            print(f"\n✅Request ID {pilihan} berhasil diproses dan dimasukkan ke transaksi.")
+            
+        elif status_input == 'K':
+            cur.execute(
+                "UPDATE request_pembelian SET status = 'K' WHERE id_request = %s", (pilihan,)
+            )
+            print(f"\n✅Request ID {pilihan} sedang dikirim!!!")
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        input("Tekan Enter untuk lanjut...")
     clear_terminal()
     print('\n' + '=' * 20 + ' MENU PENJUALAN HASIL TANI ' + '=' * 20 + '\n')
 
@@ -329,13 +393,25 @@ def binary_search_by_nama(data, target):
     return -1
 
 def ambil_semua_data():
-    clear_terminal()
     conn = connect_db()
     cur = conn.cursor()
     cur.execute("SELECT * FROM sayur")
     data = cur.fetchall()
+    colnames = [desc[0] for desc in cur.description]
     cur.close()
     conn.close()
+    print(tabulate(data, headers=colnames, tablefmt="psql"))
+    return data
+
+def ambil_semua_request():
+    conn = connect_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM request_pembelian WHERE status != 'S'")
+    data = cur.fetchall()
+    colnames = [desc[0] for desc in cur.description]
+    cur.close()
+    conn.close()
+    print(tabulate(data, headers=colnames, tablefmt="psql"))
     return data
 
 def tampilkan_data(data):
