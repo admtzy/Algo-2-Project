@@ -5,7 +5,7 @@ import os
 from datetime import date
 from tabulate import tabulate
 import time
-import sort
+# import sort
 
 # file_path = os.path.abspath("peta.html")
 # webbrowser.open(f"file://{file_path}")
@@ -14,7 +14,7 @@ def connect_db():
     host="localhost",
     database="Algo2",
     user="postgres",
-    password="",
+    password="syadid1306",
     port=5432
     )     
     return conn
@@ -152,7 +152,7 @@ def menu_owner(nama):
         elif pilihan == "3":
             pencatatan_transaksi()
         elif pilihan == "4":
-            sort.menu()
+            pengelolaan_stok()
         elif pilihan == "5":
             print("Terima kasih telah menggunakan aplikasi ini.")
             clear_terminal()
@@ -298,7 +298,11 @@ def update_harga_satuan(id_sayur, harga_baru):
 
 
 def pengelolaan_stok():
+    data = ambil_semua_data()
+    data_sorted = selection_sort_by_stok(data, jalan=True)
     while True:
+        clear_terminal()
+        tampilkan_data(data_sorted)
         print("\n==== Menu Pengelolaan Stok Hasil Tani ====")
         print("1. Tampilkan sayur berdasarkan stok ")
         print("2. Tampilkan sayur berdasarkan urutan nama")
@@ -310,16 +314,16 @@ def pengelolaan_stok():
             clear_terminal()
             data = ambil_semua_data()
             data_sorted = selection_sort_by_stok(data, jalan=True)
-            tampilkan_data(data_sorted)
-            input("\nTekan Enter untuk kembali...")
+            # tampilkan_data(data_sorted)
+            # input("\nTekan Enter untuk kembali...")
             clear_terminal()
 
         elif pilihan == '2':
             clear_terminal()
             data = ambil_semua_data()
             data_sorted = selection_sort_by_nama(data, jalan1=True)
-            tampilkan_data(data_sorted)
-            input("\nTekan Enter untuk kembali...")
+            # tampilkan_data(data_sorted)
+            # input("\nTekan Enter untuk kembali...")
             clear_terminal()
 
         elif pilihan == '3':
