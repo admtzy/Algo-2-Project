@@ -1,12 +1,14 @@
 import psycopg2
 
-conn = psycopg2.connect(
+def connect_db():
+    conn = psycopg2.connect(
     host="localhost",
-    database="Algo2",
+    database="DBAlgo2",
     user="postgres",
-    password="syadid1306",
-    port=5432)
-cur = conn.cursor()
+    password="@Raditya14",
+    port=5432
+    )     
+    return conn
 
 def selection_sort_by_stok(data, ascending=True):
     n = len(data)
@@ -39,8 +41,8 @@ def selection_sort_by_nama(data, ascending=True):
     return data
 
 def ambil_semua_data():
-    cur.execute("SELECT * FROM sayur") 
-    return cur.fetchall()
+    connect_db.execute("SELECT * FROM sayur") 
+    return connect_db.fetchall()
 
 def tampilkan_data(data):
     print("\nData Sayur:")
