@@ -235,31 +235,39 @@ def beli_hasil_tani (id_akun):
         WHERE nama_sayur ilike '{nama_sayur}'
     """
     cur.execute(query)
-
     data_sayur = cur.fetchone()
+    
+    try:
+        if data_sayur is None:
+            input("❌ Sayur tidak ditemukan dalam database.")
+            
+        else:
+            id_sayur, harga_satuan = data_sayur
+            total_harga = harga_satuan * jumlah_beli
+            status = 'P'
 
-    if data_sayur is None:
-        input("❌ Sayur tidak ditemukan dalam database.")
+            insert_query = f"""
+                INSERT INTO request_pembelian (id_akun, id_sayur, nama_sayur, jumlah_beli, total_harga, status)
+                VALUES ({id_akun}, {id_sayur}, '{nama_sayur}', {jumlah_beli}, {total_harga}, '{status}')
+            """
+            cur.execute(insert_query)
+            conn.commit()
+            input("✅ Request pembelian berhasil disimpan!")
+
+        # max_budget = int(input("Masukkan budget maksimal: "))
+    except Exception as e:
+        input(f"❌ Terjadi kesalahan: {e}")
         
-    else:
-        id_sayur, harga_satuan = data_sayur
-        total_harga = harga_satuan * jumlah_beli
-        status = 'P'
-
-        insert_query = f"""
-            INSERT INTO request_pembelian (id_akun, id_sayur, nama_sayur, jumlah_beli, total_harga, status)
-            VALUES ({id_akun}, {id_sayur}, '{nama_sayur}', {jumlah_beli}, {total_harga}, '{status}')
-        """
-        cur.execute(insert_query)
-        conn.commit()
-        input("✅ Request pembelian berhasil disimpan!")
-
-    # max_budget = int(input("Masukkan budget maksimal: "))
+    finally:
+        cur.close()
+        conn.close()
 
  
 def penjualan_hasil_tani():
     clear_terminal()
     print('\n' + '=' * 20 + ' MENU PENJUALAN HASIL TANI ' + '=' * 20 + '\n')
+
+    # menu status pengiriman nnti ada tolak, pending, dikirim, diterima
     # Tambahkan logika untuk penjualan hasil tani
 
 def rute_pengiriman():
