@@ -355,144 +355,255 @@ def selection_sort_by_stok(data, jalan=True):
         data[i], data[index_awal] = data[index_awal], data[i]
     return data
 
-def selection_sort_by_nama(data, jalan1=True):
+def sort_stock(data, jalan=True):
     n = len(data)
     for i in range(n):
-        idx_extreme = i
+        indek_min = i
         for j in range(i + 1, n):
-            nama_j = data[j][1].lower()
-            nama_extreme = data[idx_extreme][1].lower()
-            
-            if jalan1:
-                if nama_j < nama_extreme:
-                    idx_extreme = j
-                    
+            if jalan:
+                if data[j][2] < data[indek_min][2]:
+                    indek_min = j
             else:
-                if nama_j > nama_extreme:
-                    idx_extreme = j
-        data[i], data[idx_extreme] = data[idx_extreme], data[i]
+                if data[j][2] > data[indek_min][2]:
+                    indek_min = j
+        data[i], data[indek_min] = data[indek_min], data[i]
     return data
 
-def binary_search_by_nama(data, target):
-    target = target.lower()
-    left = 0
-    right = len(data) - 1
+def sort_id(data, jalan=True):
+    n = len(data)
+    for i in range(n):
+        indek_min = i
+        for j in range(i + 1, n):
+            if jalan:
+                if data[j][0] < data[indek_min][0]:
+                    indek_min = j
+            else:
+                if data[j][0] > data[indek_min][0]:
+                    indek_min = j
+        data[i], data[indek_min] = data[indek_min], data[i]
+    return data
 
-    while left <= right:
-        mid = (left + right) // 2
-        nama_mid = data[mid][1].lower()
-        
-        if nama_mid == target:
-            return mid
-        
-        elif nama_mid < target:
-            left = mid + 1
-        
+
+def sort_nama(data, jalan1=True):
+    n = len(data)
+    for i in range(n):
+        index_min = i
+        for j in range(i + 1, n):
+            if jalan1:
+                if data[j][1].lower() < data[index_min][1].lower():
+                    index_min = j
+            else:
+                if data[j][1].lower() > data[index_min][1].lower():
+                    index_min = j
+        data[i], data[index_min] = data[index_min], data[i]
+    return data
+
+def cari_nama(data, target):
+    target = target.lower()
+    kiri, kanan = 0, len(data) - 1
+    while kiri <= kanan:
+        tengah = (kiri + kanan) // 2
+        if data[tengah][1].lower() == target:
+            return tengah
+        elif data[tengah][1].lower() < target:
+            kiri = tengah + 1
         else:
-            right = mid - 1
+            kanan = tengah - 1
     return -1
 
-def ambil_semua_data():
+
+def data_full():
     conn = connect_db()
     cur = conn.cursor()
     cur.execute("SELECT * FROM sayur")
     data = cur.fetchall()
-    colnames = [desc[0] for desc in cur.description]
     cur.close()
     conn.close()
-    print(tabulate(data, headers=colnames, tablefmt="psql"))
     return data
 
-def ambil_semua_request():
+def tambah_sayur(nama, stok, harga):
     conn = connect_db()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM request_pembelian WHERE status != 'S'")
-    data = cur.fetchall()
-    colnames = [desc[0] for desc in cur.description]
-    cur.close()
-    conn.close()
-    print(tabulate(data, headers=colnames, tablefmt="psql"))
-    return data
+    try:
+        cur.execute("INSERT INTO sayur (nama, stok, harga_satuan) VALUES (%s, %s, %s)", (nama, stok, harga))
+        conn.commit()
+        print("✅ Sayur berhasil ditambahkan.")
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Gagal menambahkan sayur: {e}")
+    finally:
+        cur.close()
+        conn.close()
 
-def tampilkan_data(data):
-    clear_terminal()
-    print('\n' + '=' * 20 + ' DATA SAYUR ' + '=' * 20 + '\n')
-    print("-" * 50)
-    for row in data:
-        print(f"ID: {row[0]:<3} | Nama: {row[1]:<15} | Stok: {row[2]:<5} | Harga: Rp{row[3]:,.0f}")
-    print("-" * 50)
+def hapus_sayur(id_sayur):
+    conn = connect_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("DELETE FROM sayur WHERE id_sayur = %s", (id_sayur,))
+        conn.commit()
+        print("✅ Sayur berhasil dihapus.")
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Gagal menghapus sayur: {e}")
+    finally:
+        cur.close()
+        conn.close()
 
-
-def update_harga_satuan(id_sayur, harga_baru):
+def update_harga(id_sayur, harga_baru):
     conn = connect_db()
     cur = conn.cursor()
     try:
         cur.execute("UPDATE sayur SET harga_satuan = %s WHERE id_sayur = %s", (harga_baru, id_sayur))
         conn.commit()
-        print("✅ Harga berhasil diperbarui!!!")
-        
+        print("✅ Harga berhasil diperbarui.")
     except Exception as e:
         conn.rollback()
         print(f"❌ Gagal memperbarui harga: {e}")
-    
     finally:
         cur.close()
         conn.close()
 
+def tambah_stok(id_sayur, tambahan):
+    conn = connect_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("UPDATE sayur SET stok = stok + %s WHERE id_sayur = %s", (tambahan, id_sayur))
+        conn.commit()
+        print("✅ Stok berhasil ditambahkan.")
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Gagal menambahkan stok: {e}")
+    finally:
+        cur.close()
+        conn.close()
 
-def pengelolaan_stok():
-    data = ambil_semua_data()
-    data_sorted = selection_sort_by_stok(data, jalan=True)
+def min_5(data):
+    per_page = 5
+    total = len(data)
+    pages = (total + per_page - 1) // per_page
+    current = 0
     while True:
         clear_terminal()
-        tampilkan_data(data_sorted)
+        print(tabulate(data[current * per_page: (current + 1) * per_page], headers=["ID", "Nama", "Stok", "Harga"], tablefmt="fancy_grid"))
+        print(f"\nPage {current + 1} of {pages}")
+        print("\n1. Next Page | 2. Prev Page | 0. Exit View")
+        cmd = input("Pilih opsi: ")
+        if cmd == "1" and current < pages - 1:
+            current += 1
+        elif cmd == "2" and current > 0:
+            current -= 1
+        elif cmd == "0":
+            break
+
+def pengelolaan_stok():
+    data = data_full()
+    data_sorted = sort_id(data, jalan=True)
+    while True:
+        clear_terminal()
+        data_full(data_sorted)
         print('+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+')
         print('|| ^^^ 	      MENU PENGELOLAAN STOK          ^^^ ||')
         print('||---------    Silahkan pilih menu      ---------||')
         print('||    1. Tampilkan Sayur Berdasar Stok           ||')
         print('||    2. Tampilkan Sayur Berdasarkan Urutan Nama ||')
         print('||    3. Cari Sayur dan Ganti Harga              ||')
-        print('||    4. Kembali                                 ||')
+        print('||    4. Tambah Sayur                            ||')
+        print('||    5. Hapus Sayur                             ||')
+        print('||    6. Tambah Stock                            ||')
+        print('||    7. Kembali                                 ||')
         print('+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+')
         pilihan = input('Silahkan pilih menu: ').strip()
 
         if pilihan == '1':
-            data = ambil_semua_data()
-            data_sorted = selection_sort_by_stok(data, jalan=True)
-            clear_terminal()
+            data = sort_stock(data)
+            min_5(data)
 
         elif pilihan == '2':
-            data = ambil_semua_data()
-            data_sorted = selection_sort_by_nama(data, jalan1=True)
-            clear_terminal()
+            data = sort_nama(data)
+            min_5(data)
 
         elif pilihan == '3':
-            data = ambil_semua_data()
-            data_sorted = selection_sort_by_nama(data, jalan1=True)
-            tampilkan_data(data_sorted)
-
-            target = input("\nMasukkan nama sayur yang ingin dicari: ").strip()
-            index = binary_search_by_nama(data_sorted, target)
-
+            data = sort_nama(data)
+            min_5(data)
+            print(tabulate(data, headers=["ID", "Nama", "Stok", "Harga"], tablefmt="fancy_grid"))
+            target = input("\nMasukkan nama sayur: ").strip()
+            index = cari_nama(data, target)
             if index != -1:
-                sayur = data_sorted[index]
-                print(f"\n✅ Ditemukan: ID: {sayur[0]}, Nama: {sayur[1]}, Stok: {sayur[2]}, Harga: Rp{sayur[3]:,.0f}")
+                sayur = data[index]
+                print(f"\n✅ Ditemukan:\n{tabulate([sayur], headers=['ID', 'Nama', 'Stok', 'Harga'], tablefmt='grid')}")
                 harga_baru = input("Masukkan harga baru: ").strip()
                 if harga_baru.isdigit():
-                    update_harga_satuan(sayur[0], int(harga_baru))
+                    update_harga(sayur[0], int(harga_baru))
+                    data = sort_id (data_full())
                 else:
                     print("❌ Harga tidak valid.")
             else:
                 print("❌ Sayur tidak ditemukan.")
 
-            kembali()
-
         elif pilihan == '4':
+            nama = input("Masukkan nama sayur: ").strip()
+            stok = input("Masukkan stok: ").strip()
+            harga = input("Masukkan harga satuan: ").strip()
+            if stok.isdigit() and harga.isdigit():
+                tambah_sayur(nama, int(stok), int(harga))
+                data = sort_id (data_full())
+            else:
+                print("❌ Input stok atau harga tidak valid.")
+
+        elif pilihan == '5':
             clear_terminal()
+            data = sort_id(data_full())
+            print(tabulate(data, headers=["ID", "Nama", "Stok", "Harga"], tablefmt="fancy_grid"))
+            id_del = input("\nMasukkan ID sayur yang ingin dihapus: ").strip()
+            if id_del.isdigit():
+                id_del = int(id_del)
+                say = None
+                for item in data:
+                    if item[0] == id_del:
+                        say = item
+                        break
+                if say:
+                    print("\n✅ Sayur yang akan dihapus:")
+                    print(tabulate([say], headers=["ID", "Nama", "Stok", "Harga"], tablefmt="grid"))
+                    konfirmasi = input("Yakin ingin menghapus? (y/n): ").strip().lower()
+                    if konfirmasi == 'y':
+                        hapus_sayur(id_del)
+                    else:
+                        print("❌ Dibatalkan.")
+                else:
+                    print("❌ ID tidak ditemukan.")
+            else:
+                print("❌ ID tidak valid.")
+
+        elif pilihan == '6':
+            clear_terminal()
+            data = sort_id(data_full())
+            print(tabulate(data, headers=["ID", "Nama", "Stok", "Harga"], tablefmt="fancy_grid"))
+            id_sayur = input("\nMasukkan ID sayur yang ingin ditambah stok: ").strip()
+            if id_sayur.isdigit():
+                id_sayur = int(id_sayur)
+                say1 = None
+                for item in data:
+                    if item[0] == id_sayur:
+                        say1 = item
+                        break
+                if say1:
+                    print("\n✅ Sayur yang dipilih:")
+                    print(tabulate([say1], headers=["ID", "Nama", "Stok", "Harga"], tablefmt="grid"))
+                    tambahan = input("Masukkan jumlah stok tambahan: ").strip()
+                    if tambahan.isdigit():
+                        tambah_stok(id_sayur, int(tambahan))
+                    else:
+                        print("❌ Jumlah stok tidak valid.")
+                else:
+                    print("❌ ID tidak ditemukan.")
+            else:
+                print("❌ ID tidak valid.")
+
+        elif pilihan == '7':
             break
         else:
-            print("❌ Pilihan tidak valid. Silakan pilih 1, 2, 3, atau 4.")
-            kembali()
+            print("❌ Pilihan tidak valid.")
 
 def pencatatan_transaksi():
     clear_terminal()
