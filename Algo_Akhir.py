@@ -64,14 +64,12 @@ def menu_register():
     nama = input("Nama: ")
     no_hp = input("No HP: ")
     password = input("Password (max 8 karakter): ")
-    register(nama, no_hp, password)
-
-def register(nama, no_hp, password):
+    
     conn = connect_db()
     cur = conn.cursor()
     
     cur.execute("SELECT * FROM akun WHERE no_hp = %s", (no_hp,))
-    no_hp2 = cur.fetchone()[0]
+    no_hp2 = cur.fetchone()
     
     if no_hp2 is not None:
         print("Registrasi gagal: Nomor HP sudah digunakan!!!")
@@ -86,10 +84,8 @@ def register(nama, no_hp, password):
                 time.sleep(0.5) 
             file_path = os.path.abspath("peta.html")
             webbrowser.open(f"file://{file_path}")
-            lokasi=input("Masukkan Lokasi Anda : ")
+            lokasi=input("\nMasukkan Lokasi Anda : ")
             latitude,longitude=lokasi.split(',')
-            
-        else:
             # Insert ke tabel akun
             cur.execute("""
                 INSERT INTO akun (nama, no_hp, password, status_akun)
@@ -105,7 +101,6 @@ def register(nama, no_hp, password):
 
             conn.commit()
             print("Registrasi berhasil!")
-            input("Tekan Enter untuk kembali ke menu utama...")
             kembali()
             
     except psycopg2.IntegrityError:
@@ -127,9 +122,7 @@ def menu_login():
     print('\n' + '=' * 20 + ' LOGIN ' + '=' * 20 + '\n')
     no_hp = input("No HP: ")
     password = input("Password: ")
-    login(no_hp, password)
-        
-def login(no_hp, password):
+
     try:
         conn = connect_db()
         cur = conn.cursor()
@@ -227,12 +220,20 @@ def menu_pembeli(id_akun, nama):
             print("Pilihan tidak valid.")
 
 def beli_hasil_tani (id_akun):
-    clear_terminal()
-    print('\n' + '=' * 20 + ' MENU BELI HASIL TANI ' + '=' * 20 + '\n')
-    data_full()
-    nama_sayur = input("Masukkan nama sayur: ").strip()
-    jumlah_beli = int(input("Masukkan jumlah beli: "))
-    
+    while True :
+        try :
+            clear_terminal()
+            print('\n' + '=' * 20 + ' MENU BELI HASIL TANI ' + '=' * 20 + '\n')
+            data=data_full()
+            print(tabulate(data,headers=["ID", "Nama", "Stok", "Harga"],tablefmt="psql"))
+            nama_sayur = str(input("Masukkan nama sayur (0 untuk kembali): ").strip())
+            jumlah_beli = int(input("Masukkan jumlah beli: "))
+            break
+        except ValueError :
+            input("Data yang dimasukkan salah...")
+            continue
+    if nama_sayur == "0" :
+        return
     conn = connect_db()
     cur = conn.cursor()
     query = f"""
@@ -271,16 +272,33 @@ def beli_hasil_tani (id_akun):
         conn.close()
 
 def riwayat_pembelian(id_akun):
+    conn = connect_db()
+    cur = conn.cursor()
+    cur.execute(f"SELECT * FROM request_pembelian where id_akun = {id_akun}")
+    data = cur.fetchall()
+    cur.close()
+    conn.close()
+
     clear_terminal()
     print('\n' + '=' * 20 + ' RIWAYAT PEMBELIAN ' + '=' * 20 + '\n')
+    print(tabulate(data,headers=["ID Request", "ID Akun", "ID Sayur", "Nama Sayur","Jumlah Beli", "Total Harga", "Status"],tablefmt="psql"))
+    input("Tekan Enter Untuk Kembali...")
     # Tambahkan logika untuk menampilkan riwayat pembelian
  
 def penjualan_hasil_tani():
 
     while True:
+        conn = connect_db()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM request_pembelian where status != 'S'")
+        data = cur.fetchall()
+        cur.close()
+        conn.close()
+
         clear_terminal()
         print('\n' + '=' * 20 + ' MENU PENJUALAN HASIL TANI ' + '=' * 20 + '\n')
-        data_full()
+        # data_full()
+        print(tabulate(data,headers=["ID Request", "ID Akun", "ID Sayur", "Nama Sayur","Jumlah Beli", "Total Harga", "Status"],tablefmt="psql"))
         # print(tabulate(data, headers=colnames, tablefmt="psql"))
         pilihan = input("Masukkan id request yang ingin diproses (atau '0' untuk keluar): ").strip()
         if pilihan == '0':
@@ -335,6 +353,19 @@ def penjualan_hasil_tani():
     # menu status pengiriman nnti ada tolak, pending, dikirim, diterima
     # Tambahkan logika untuk penjualan hasil tani
 
+def pencatatan_transaksi():
+    conn = connect_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM request_pembelian where status = 'S' ")
+    data = cur.fetchall()
+    cur.close()
+    conn.close()
+    clear_terminal()
+    print('\n' + '=' * 20 + ' MENU PENCATATAN TRANSAKSI ' + '=' * 20 + '\n')
+    print(tabulate(data,headers=["ID Request", "ID Akun", "ID Sayur", "Nama Sayur","Jumlah Beli", "Total Harga", "Status"],tablefmt="psql"))
+    input("Tekan Enter Untuk Kembali")
+    # Tambahkan logika untuk pencatatan transaksi
+    
 def rute_pengiriman():
     clear_terminal()
     print('\n' + '=' * 20 + ' MENU RUTE PENGIRIMAN ' + '=' * 20 + '\n')
@@ -383,7 +414,6 @@ def sort_id(data, jalan=True):
                     indek_min = j
         data[i], data[indek_min] = data[indek_min], data[i]
     return data
-
 
 def sort_nama(data, jalan1=True):
     n = len(data)
@@ -607,10 +637,7 @@ def pengelolaan_stok():
         else:
             print("❌ Pilihan tidak valid.")
 
-def pencatatan_transaksi():
-    clear_terminal()
-    print('\n' + '=' * 20 + ' MENU PENCATATAN TRANSAKSI ' + '=' * 20 + '\n')
-    # Tambahkan logika untuk pencatatan transaksi
+
     
     
 main()
