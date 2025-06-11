@@ -11,9 +11,9 @@ import time
 def connect_db():
     conn = psycopg2.connect(
     host="localhost",
-    database="DBAlgo2",
+    database="Algo2",
     user="postgres",
-    password="@Raditya14",
+    password="syadid1306",
     port=5432
     )     
     return conn
@@ -229,7 +229,7 @@ def menu_pembeli(id_akun, nama):
 def beli_hasil_tani (id_akun):
     clear_terminal()
     print('\n' + '=' * 20 + ' MENU BELI HASIL TANI ' + '=' * 20 + '\n')
-    ambil_semua_data()
+    data_full()
     nama_sayur = input("Masukkan nama sayur: ").strip()
     jumlah_beli = int(input("Masukkan jumlah beli: "))
     
@@ -280,7 +280,8 @@ def penjualan_hasil_tani():
     while True:
         clear_terminal()
         print('\n' + '=' * 20 + ' MENU PENJUALAN HASIL TANI ' + '=' * 20 + '\n')
-        ambil_semua_request()
+        data_full()
+        # print(tabulate(data, headers=colnames, tablefmt="psql"))
         pilihan = input("Masukkan id request yang ingin diproses (atau '0' untuk keluar): ").strip()
         if pilihan == '0':
             break
@@ -497,10 +498,11 @@ def min_5(data):
 
 def pengelolaan_stok():
     data = data_full()
-    data_sorted = sort_id(data, jalan=True)
+    # data_sorted = sort_id(data, jalan=True)
     while True:
         clear_terminal()
-        data_full(data_sorted)
+        print(tabulate(data,headers=["ID", "Nama", "Stok", "Harga"],tablefmt="psql"))
+        # data_full(data_sorted)
         print('+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+')
         print('|| ^^^ 	      MENU PENGELOLAAN STOK          ^^^ ||')
         print('||---------    Silahkan pilih menu      ---------||')
