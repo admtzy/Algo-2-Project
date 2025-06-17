@@ -109,7 +109,7 @@ def menu_register():
         
     except Exception as e:
         conn.rollback()
-        input("Terjadi kesalahan:", e)
+        input(f"Terjadi kesalahan: {e}")
         kembali()
         
     finally:
@@ -219,21 +219,43 @@ def menu_pembeli(id_akun, nama):
         else:
             print("Pilihan tidak valid.")
 
-def beli_hasil_tani (id_akun):
-    while True :
-        try :
+def beli_hasil_tani(id_akun):
+    while True:
+        try:
             clear_terminal()
             print('\n' + '=' * 20 + ' MENU BELI HASIL TANI ' + '=' * 20 + '\n')
-            data=data_full()
-            print(tabulate(data,headers=["ID", "Nama", "Stok", "Harga"],tablefmt="psql"))
+            data = data_full()
+            print(tabulate(data, headers=["ID", "Nama", "Stok", "Harga"], tablefmt="fancy_grid"))
+            
             nama_sayur = str(input("Masukkan nama sayur (0 untuk kembali): ").strip())
+            if nama_sayur == "0":
+                return
+            
             jumlah_beli = int(input("Masukkan jumlah beli: "))
+            
+            conn = connect_db()
+            cur = conn.cursor()
+            cur.execute("SELECT stok FROM sayur WHERE nama_sayur ILIKE %s", (nama_sayur,))
+            result = cur.fetchone()
+            cur.close()
+            conn.close()
+
+            if not result:
+                input("⚠️ Sayur tidak ditemukan. Tekan Enter untuk ulang...")
+                continue
+
+            stok_tersedia = result[0]
+
+            if jumlah_beli > stok_tersedia:
+                input(f"⚠️ Jumlah melebihi stok tersedia ({stok_tersedia}). Tekan Enter untuk ulang...")
+                continue
             break
-        except ValueError :
-            input("Data yang dimasukkan salah...")
+        
+        except ValueError:
+            input("⚠️ Data yang dimasukkan salah... Tekan Enter untuk ulang...")
             continue
-    if nama_sayur == "0" :
-        return
+
+    
     conn = connect_db()
     cur = conn.cursor()
     query = f"""
@@ -280,12 +302,11 @@ def riwayat_pembelian(id_akun):
 
     clear_terminal()
     print('\n' + '=' * 20 + ' RIWAYAT PEMBELIAN ' + '=' * 20 + '\n')
-    print(tabulate(data,headers=["ID Request", "ID Akun", "ID Sayur", "Nama Sayur","Jumlah Beli", "Total Harga", "Status"],tablefmt="psql"))
+    print(tabulate(data,headers=["ID Request", "ID Akun", "ID Sayur", "Nama Sayur","Jumlah Beli", "Total Harga", "Status"],tablefmt="fancy_grid"))
     input("Tekan Enter Untuk Kembali...")
     # Tambahkan logika untuk menampilkan riwayat pembelian
  
 def penjualan_hasil_tani():
-
     while True:
         conn = connect_db()
         cur = conn.cursor()
@@ -296,17 +317,27 @@ def penjualan_hasil_tani():
 
         clear_terminal()
         print('\n' + '=' * 20 + ' MENU PENJUALAN HASIL TANI ' + '=' * 20 + '\n')
-        # data_full()
         print(tabulate(data,headers=["ID Request", "ID Akun", "ID Sayur", "Nama Sayur","Jumlah Beli", "Total Harga", "Status"],tablefmt="fancy_grid"))
-        # print(tabulate(data, headers=colnames, tablefmt="psql"))
         pilihan = input("Masukkan id request yang ingin diproses (atau '0' untuk keluar): ").strip()
+        
         if pilihan == '0':
             break
         
+        else:
+            if not pilihan.isdigit():
+                print("\n⚠️ID request harus berupa angka!!!")
+                time.sleep(1)
+                continue
+            
+            pilihan = int(pilihan)
+            if pilihan <= 0:
+                print("\n⚠️ID request tidak valid!!!")
+                time.sleep(1)
+                continue
+            
         conn = connect_db()
         cur = conn.cursor()
 
-        # Periksa apakah ID request valid
         cur.execute("SELECT * FROM request_pembelian WHERE id_request = %s", (pilihan,))
         request = cur.fetchone()
 
@@ -334,8 +365,23 @@ def penjualan_hasil_tani():
                 "INSERT INTO transaksi (id_request, tanggal) VALUES (%s, %s)",
                 (pilihan, date.today())
             )
-            print(f"\n✅Request ID {pilihan} berhasil diproses dan dimasukkan ke transaksi.")
             
+            id_sayur = request[2]
+            jumlah_beli = request[4]
+            
+            cur.execute("SELECT stok FROM sayur WHERE id_sayur = %s", (id_sayur,))
+            stok_skrg = cur.fetchone()
+        
+            if stok_skrg:
+                stok_baru = stok_skrg[0] - jumlah_beli
+                
+                if stok_baru < 0:
+                    print("\n⚠️ Stok tidak mencukupi untuk menyelesaikan request ini!")
+                    
+                else:
+                    cur.execute("UPDATE sayur SET stok = %s WHERE id_sayur = %s", (stok_baru, id_sayur))
+                    print(f"\n✅ Request ID {pilihan} berhasil diproses, stok diperbarui.")
+
         elif status_input == 'K':
             cur.execute(
                 "UPDATE request_pembelian SET status = 'K' WHERE id_request = %s", (pilihan,)
@@ -601,7 +647,4 @@ def pengelolaan_stok():
         else:
             print("❌ Pilihan tidak valid.")
 
-
-    
-    
 main()
