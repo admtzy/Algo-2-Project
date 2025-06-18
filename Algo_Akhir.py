@@ -1,13 +1,11 @@
 import psycopg2
-import webbrowser
+import webview
 import os
 from datetime import date
 from tabulate import tabulate
 import time
-# import sort
+from Rute import tampilkan_rute
 
-# file_path = os.path.abspath("peta.html")
-# webbrowser.open(f"file://{file_path}")
 def connect_db():
     conn = psycopg2.connect(
     host="localhost",
@@ -30,8 +28,8 @@ def kembali ():
         kembali()
         
 def main():
-    clear_terminal()
     while True:
+        clear_terminal()
         print('+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+')
         print('|| ^^^ 	     	        MENU                 ^^^ ||')
         print('||---------    Silahkan pilih menu      ---------||')
@@ -82,10 +80,25 @@ def menu_register():
             for i in range(5):
                 print(".", end="", flush=True)
                 time.sleep(0.5) 
-            file_path = os.path.abspath("peta.html")
-            webbrowser.open(f"file://{file_path}")
-            lokasi=input("\nMasukkan Lokasi Anda : ")
-            latitude,longitude=lokasi.split(',')
+                
+            html_path = os.path.abspath("Ambil_Koordinat.html")
+            window = webview.create_window("Ambil Koordinat", f"file://{html_path}")
+            webview.start(lambda: tampilkan_rute(window))
+            clear_terminal()
+            while True :
+                try :
+                        lokasi=input("\nMasukkan Lokasi Anda : ")
+                        bagian = lokasi.split(',')
+                        if bagian == "" :
+                            raise ValueError
+                        if len(bagian) != 2:
+                            raise ValueError
+                        break
+
+                except ValueError :
+                    clear_terminal()
+            latitude = (bagian[0].strip())
+            longitude =(bagian[1].strip())
             # Insert ke tabel akun
             cur.execute("""
                 INSERT INTO akun (nama, no_hp, password, status_akun)
@@ -108,10 +121,10 @@ def menu_register():
         input("Registrasi gagal: Nomor HP sudah digunakan atau data tidak valid.")
         kembali()
         
-    except Exception as e:
-        conn.rollback()
-        input("Terjadi kesalahan:", e)
-        kembali()
+    # except Exception as e:
+    #     conn.rollback()
+    #     input(f"Terjadi kesalahan: {e}")
+    #     kembali()
         
     finally:
         cur.close()
@@ -174,7 +187,10 @@ def menu_owner(nama):
             penjualan_hasil_tani()
             
         elif pilihan == "2":
-            rute_pengiriman()
+            html_path = os.path.abspath("Rute_Pengiriman.html")
+            window = webview.create_window("Rute Pengiriman", f"file://{html_path}")
+            webview.start(lambda: tampilkan_rute(window))
+            clear_terminal()
             
         elif pilihan == "3":
             pencatatan_transaksi()
@@ -183,6 +199,7 @@ def menu_owner(nama):
             pengelolaan_stok()
         
         elif pilihan == "5":
+            clear_terminal()
             print('\n' + '=' * 20 + ' TERIMA KASIH TELAH MENGGUNAKAN APLIKASI TANI ' + '=' * 20 + '\n')
             time.sleep(1)
             clear_terminal()
@@ -219,21 +236,43 @@ def menu_pembeli(id_akun, nama):
         else:
             print("Pilihan tidak valid.")
 
-def beli_hasil_tani (id_akun):
-    while True :
-        try :
+def beli_hasil_tani(id_akun):
+    while True:
+        try:
             clear_terminal()
             print('\n' + '=' * 20 + ' MENU BELI HASIL TANI ' + '=' * 20 + '\n')
-            data=data_full()
-            print(tabulate(data,headers=["ID", "Nama", "Stok", "Harga"],tablefmt="psql"))
+            data = data_full()
+            print(tabulate(data, headers=["ID", "Nama", "Stok", "Harga"], tablefmt="fancy_grid"))
+            
             nama_sayur = str(input("Masukkan nama sayur (0 untuk kembali): ").strip())
+            if nama_sayur == "0":
+                return
+            
             jumlah_beli = int(input("Masukkan jumlah beli: "))
+            
+            conn = connect_db()
+            cur = conn.cursor()
+            cur.execute("SELECT stok FROM sayur WHERE nama_sayur ILIKE %s", (nama_sayur,))
+            result = cur.fetchone()
+            cur.close()
+            conn.close()
+
+            if not result:
+                input("⚠️ Sayur tidak ditemukan. Tekan Enter untuk ulang...")
+                continue
+
+            stok_tersedia = result[0]
+
+            if jumlah_beli > stok_tersedia:
+                input(f"⚠️ Jumlah melebihi stok tersedia ({stok_tersedia}). Tekan Enter untuk ulang...")
+                continue
             break
-        except ValueError :
-            input("Data yang dimasukkan salah...")
+        
+        except ValueError:
+            input("⚠️ Data yang dimasukkan salah... Tekan Enter untuk ulang...")
             continue
-    if nama_sayur == "0" :
-        return
+
+    
     conn = connect_db()
     cur = conn.cursor()
     query = f"""
@@ -261,7 +300,6 @@ def beli_hasil_tani (id_akun):
             conn.commit()
             input("✅ Request pembelian berhasil disimpan!")
 
-        # max_budget = int(input("Masukkan budget maksimal: "))
     except Exception as e:
         input(f"❌ Terjadi kesalahan: {e}")
 
@@ -281,12 +319,11 @@ def riwayat_pembelian(id_akun):
 
     clear_terminal()
     print('\n' + '=' * 20 + ' RIWAYAT PEMBELIAN ' + '=' * 20 + '\n')
-    print(tabulate(data,headers=["ID Request", "ID Akun", "ID Sayur", "Nama Sayur","Jumlah Beli", "Total Harga", "Status"],tablefmt="psql"))
+    print(tabulate(data,headers=["ID Request", "ID Akun", "ID Sayur", "Nama Sayur","Jumlah Beli", "Total Harga", "Status"],tablefmt="fancy_grid"))
     input("Tekan Enter Untuk Kembali...")
     # Tambahkan logika untuk menampilkan riwayat pembelian
  
 def penjualan_hasil_tani():
-
     while True:
         conn = connect_db()
         cur = conn.cursor()
@@ -297,17 +334,27 @@ def penjualan_hasil_tani():
 
         clear_terminal()
         print('\n' + '=' * 20 + ' MENU PENJUALAN HASIL TANI ' + '=' * 20 + '\n')
-        # data_full()
-        print(tabulate(data,headers=["ID Request", "ID Akun", "ID Sayur", "Nama Sayur","Jumlah Beli", "Total Harga", "Status"],tablefmt="psql"))
-        # print(tabulate(data, headers=colnames, tablefmt="psql"))
+        print(tabulate(data,headers=["ID Request", "ID Akun", "ID Sayur", "Nama Sayur","Jumlah Beli", "Total Harga", "Status"],tablefmt="fancy_grid"))
         pilihan = input("Masukkan id request yang ingin diproses (atau '0' untuk keluar): ").strip()
+        
         if pilihan == '0':
             break
         
+        else:
+            if not pilihan.isdigit():
+                print("\n⚠️ID request harus berupa angka!!!")
+                time.sleep(1)
+                continue
+            
+            pilihan = int(pilihan)
+            if pilihan <= 0:
+                print("\n⚠️ID request tidak valid!!!")
+                time.sleep(1)
+                continue
+            
         conn = connect_db()
         cur = conn.cursor()
 
-        # Periksa apakah ID request valid
         cur.execute("SELECT * FROM request_pembelian WHERE id_request = %s", (pilihan,))
         request = cur.fetchone()
 
@@ -335,8 +382,23 @@ def penjualan_hasil_tani():
                 "INSERT INTO transaksi (id_request, tanggal) VALUES (%s, %s)",
                 (pilihan, date.today())
             )
-            print(f"\n✅Request ID {pilihan} berhasil diproses dan dimasukkan ke transaksi.")
             
+            id_sayur = request[2]
+            jumlah_beli = request[4]
+            
+            cur.execute("SELECT stok FROM sayur WHERE id_sayur = %s", (id_sayur,))
+            stok_skrg = cur.fetchone()
+        
+            if stok_skrg:
+                stok_baru = stok_skrg[0] - jumlah_beli
+                
+                if stok_baru < 0:
+                    print("\n⚠️ Stok tidak mencukupi untuk menyelesaikan request ini!")
+                    
+                else:
+                    cur.execute("UPDATE sayur SET stok = %s WHERE id_sayur = %s", (stok_baru, id_sayur))
+                    print(f"\n✅ Request ID {pilihan} berhasil diproses, stok diperbarui.")
+
         elif status_input == 'K':
             cur.execute(
                 "UPDATE request_pembelian SET status = 'K' WHERE id_request = %s", (pilihan,)
@@ -348,10 +410,6 @@ def penjualan_hasil_tani():
         conn.close()
         input("Tekan Enter untuk lanjut...")
     clear_terminal()
-    print('\n' + '=' * 20 + ' MENU PENJUALAN HASIL TANI ' + '=' * 20 + '\n')
-
-    # menu status pengiriman nnti ada tolak, pending, dikirim, diterima
-    # Tambahkan logika untuk penjualan hasil tani
 
 def pencatatan_transaksi():
     conn = connect_db()
@@ -362,9 +420,9 @@ def pencatatan_transaksi():
     conn.close()
     clear_terminal()
     print('\n' + '=' * 20 + ' MENU PENCATATAN TRANSAKSI ' + '=' * 20 + '\n')
-    print(tabulate(data,headers=["ID Request", "ID Akun", "ID Sayur", "Nama Sayur","Jumlah Beli", "Total Harga", "Status"],tablefmt="psql"))
+    print(tabulate(data,headers=["ID Request", "ID Akun", "ID Sayur", "Nama Sayur","Jumlah Beli", "Total Harga", "Status"],tablefmt="fancy_grid"))
+    
     input("Tekan Enter Untuk Kembali")
-    # Tambahkan logika untuk pencatatan transaksi
     
 def rute_pengiriman():
     clear_terminal()
@@ -499,10 +557,9 @@ def min_5(data):
 
 def pengelolaan_stok():
     data = data_full()
-    # data_sorted = sort_id(data, jalan=True)
     while True:
         clear_terminal()
-        print(tabulate(data,headers=["ID", "Nama", "Stok", "Harga"],tablefmt="psql"))
+        min_5(data)
         # data_full(data_sorted)
         print('+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+')
         print('|| ^^^ 	      MENU PENGELOLAAN STOK          ^^^ ||')
@@ -528,12 +585,10 @@ def pengelolaan_stok():
         elif pilihan == '3':
             data = sort_nama(data)
             min_5(data)
-            print(tabulate(data, headers=["ID", "Nama", "Stok", "Harga"], tablefmt="fancy_grid"))
             target = input("\nMasukkan nama sayur: ").strip()
             index = cari_nama(data, target)
             if index != -1:
                 sayur = data[index]
-                print(f"\n✅ Ditemukan:\n{tabulate([sayur], headers=['ID', 'Nama', 'Stok', 'Harga'], tablefmt='grid')}")
                 harga_baru = input("Masukkan harga baru: ").strip()
                 if harga_baru.isdigit():
                     update_harga(sayur[0], int(harga_baru))
@@ -556,7 +611,7 @@ def pengelolaan_stok():
         elif pilihan == '5':
             clear_terminal()
             data = sort_id(data_full())
-            print(tabulate(data, headers=["ID", "Nama", "Stok", "Harga"], tablefmt="fancy_grid"))
+            min_5(data)
             id_del = input("\nMasukkan ID sayur yang ingin dihapus: ").strip()
             if id_del.isdigit():
                 id_del = int(id_del)
@@ -567,7 +622,6 @@ def pengelolaan_stok():
                         break
                 if say:
                     print("\n✅ Sayur yang akan dihapus:")
-                    print(tabulate([say], headers=["ID", "Nama", "Stok", "Harga"], tablefmt="grid"))
                     konfirmasi = input("Yakin ingin menghapus? (y/n): ").strip().lower()
                     if konfirmasi == 'y':
                         hapus_sayur(id_del)
@@ -581,7 +635,7 @@ def pengelolaan_stok():
         elif pilihan == '6':
             clear_terminal()
             data = sort_id(data_full())
-            print(tabulate(data, headers=["ID", "Nama", "Stok", "Harga"], tablefmt="fancy_grid"))
+            min_5(data)
             id_sayur = input("\nMasukkan ID sayur yang ingin ditambah stok: ").strip()
             if id_sayur.isdigit():
                 id_sayur = int(id_sayur)
@@ -592,10 +646,12 @@ def pengelolaan_stok():
                         break
                 if say1:
                     print("\n✅ Sayur yang dipilih:")
-                    print(tabulate([say1], headers=["ID", "Nama", "Stok", "Harga"], tablefmt="grid"))
+                    print(tabulate([say1], headers=["ID", "Nama", "Stok", "Harga"], tablefmt="fancy_grid"))
                     tambahan = input("Masukkan jumlah stok tambahan: ").strip()
                     if tambahan.isdigit():
                         tambah_stok(id_sayur, int(tambahan))
+                        data = sort_id(data_full())
+                        kembali()
                     else:
                         print("❌ Jumlah stok tidak valid.")
                 else:
@@ -608,7 +664,4 @@ def pengelolaan_stok():
         else:
             print("❌ Pilihan tidak valid.")
 
-
-    
-    
 main()
