@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Rute Pengiriman</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    #map { height: 100vh; width: 100%; margin: 0; padding: 0; }
+    body { margin: 0; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script>
+    const map = L.map('map').setView([-8.164725, 113.715298], 17);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    function tampilkanRute(rute) {
+      if (!Array.isArray(rute) || rute.length === 0) return;
+
+      // Tambah marker
+      rute.forEach(([lat, lon]) => {
+        L.marker([lat, lon]).addTo(map);
+      });
+
+      // Tambah garis polyline
+      L.polyline(rute, { color: 'red' }).addTo(map);
+
+      // Fokus ke titik pertama
+      map.setView(rute[0], 17);
+    }
+  </script>
+</body>
+</html>

@@ -1,18 +1,17 @@
 import psycopg2
-import webbrowser
+import webview
 import os
 from datetime import date
 from tabulate import tabulate
 import time
+from Rute import tampilkan_rute
 
-# file_path = os.path.abspath("peta.html")
-# webbrowser.open(f"file://{file_path}")
 def connect_db():
     conn = psycopg2.connect(
     host="localhost",
-    database="DBAlgo2",
+    database="Algo2",
     user="postgres",
-    password="@Raditya14",
+    password="syadid1306",
     port=5432
     )     
     return conn
@@ -29,8 +28,8 @@ def kembali ():
         kembali()
         
 def main():
-    clear_terminal()
     while True:
+        clear_terminal()
         print('+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+')
         print('|| ^^^ 	     	        MENU                 ^^^ ||')
         print('||---------    Silahkan pilih menu      ---------||')
@@ -81,10 +80,25 @@ def menu_register():
             for i in range(5):
                 print(".", end="", flush=True)
                 time.sleep(0.5) 
-            file_path = os.path.abspath("peta.html")
-            webbrowser.open(f"file://{file_path}")
-            lokasi=input("\nMasukkan Lokasi Anda : ")
-            latitude,longitude=lokasi.split(',')
+                
+            html_path = os.path.abspath("Ambil_Koordinat.html")
+            window = webview.create_window("Ambil Koordinat", f"file://{html_path}")
+            webview.start(lambda: tampilkan_rute(window))
+            clear_terminal()
+            while True :
+                try :
+                        lokasi=input("\nMasukkan Lokasi Anda : ")
+                        bagian = lokasi.split(',')
+                        if bagian == "" :
+                            raise ValueError
+                        if len(bagian) != 2:
+                            raise ValueError
+                        break
+
+                except ValueError :
+                    clear_terminal()
+            latitude = (bagian[0].strip())
+            longitude =(bagian[1].strip())
             # Insert ke tabel akun
             cur.execute("""
                 INSERT INTO akun (nama, no_hp, password, status_akun)
@@ -107,10 +121,10 @@ def menu_register():
         input("Registrasi gagal: Nomor HP sudah digunakan atau data tidak valid.")
         kembali()
         
-    except Exception as e:
-        conn.rollback()
-        input(f"Terjadi kesalahan: {e}")
-        kembali()
+    # except Exception as e:
+    #     conn.rollback()
+    #     input(f"Terjadi kesalahan: {e}")
+    #     kembali()
         
     finally:
         cur.close()
@@ -173,7 +187,10 @@ def menu_owner(nama):
             penjualan_hasil_tani()
             
         elif pilihan == "2":
-            rute_pengiriman()
+            html_path = os.path.abspath("Rute_Pengiriman.html")
+            window = webview.create_window("Rute Pengiriman", f"file://{html_path}")
+            webview.start(lambda: tampilkan_rute(window))
+            clear_terminal()
             
         elif pilihan == "3":
             pencatatan_transaksi()
