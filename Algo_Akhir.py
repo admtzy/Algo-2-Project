@@ -429,33 +429,23 @@ def rute_pengiriman():
     print('\n' + '=' * 20 + ' MENU RUTE PENGIRIMAN ' + '=' * 20 + '\n')
     # Tambahkan logika untuk rute pengiriman
 
-def sort_stock(data):
+def sort_data(data, berdasarkan='id'):
     n = len(data)
-    for i in range(n):
-        indek_min = i
-        for j in range(i + 1, n):
-            if data[j][2] < data[indek_min][2]:
-                indek_min = j
-        data[i], data[indek_min] = data[indek_min], data[i]
-    return data
+    indeks = {'id': 0, 'nama': 1, 'stok': 2}
+    if berdasarkan not in indeks:
+        print("Pilihan pengurutan tidak valid. Silakan pilih 'id', 'nama', atau 'stok'.")
+        return data 
+    kunci = indeks[berdasarkan]
 
-def sort_id(data):
-    n = len(data)
-    for i in range(n):
-        indek_min = i
-        for j in range(i + 1, n):
-            if data[j][0] < data[indek_min][0]:
-                indek_min = j
-        data[i], data[indek_min] = data[indek_min], data[i]
-    return data
-
-def sort_nama(data):
-    n = len(data)
     for i in range(n):
         index_min = i
         for j in range(i + 1, n):
-            if data[j][1].lower() < data[index_min][1].lower():
-                index_min = j
+            if berdasarkan == 'nama':
+                if data[j][kunci].lower() < data[index_min][kunci].lower():
+                    index_min = j
+            else:
+                if data[j][kunci] < data[index_min][kunci]:
+                    index_min = j
         data[i], data[index_min] = data[index_min], data[i]
     return data
 
@@ -537,131 +527,271 @@ def tambah_stok(id_sayur, tambahan):
         cur.close()
         conn.close()
 
-def min_5(data):
-    per_page = 5
-    total = len(data)
-    pages = (total + per_page - 1) // per_page
-    current = 0
-    while True:
-        clear_terminal()
-        print(tabulate(data[current * per_page: (current + 1) * per_page], headers=["ID", "Nama", "Stok", "Harga"], tablefmt="fancy_grid"))
-        print(f"\nPage {current + 1} of {pages}")
-        print("\n1. Next Page | 2. Prev Page | 0. Exit View")
-        cmd = input("Pilih opsi: ")
-        if cmd == "1" and current < pages - 1:
-            current += 1
-        elif cmd == "2" and current > 0:
-            current -= 1
-        elif cmd == "0":
-            break
-
 def pengelolaan_stok():
-    data = data_full()
+    awal = 0
+    liss = 5
+
     while True:
+        data = sort_data(data_full(), 'id')
+        total = len(data)
+        total_pages = (total + liss - 1) // liss
+
         clear_terminal()
-        min_5(data)
-        # data_full(data_sorted)
-        print('+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+')
+        print("=== Data Sayur ===")
+        start = awal * liss
+        end = start + liss
+        tampil = data[start:end]
+
+        print(tabulate(tampil, headers=["ID", "Nama", "Stok", "Harga"], tablefmt="fancy_grid"))
+        print(f"\nPage {awal + 1} dari {total_pages}")
+
+        print('\n+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+')
         print('|| ^^^ 	      MENU PENGELOLAAN STOK          ^^^ ||')
         print('||---------    Silahkan pilih menu      ---------||')
-        print('||    1. Tampilkan Sayur Berdasar Stok           ||')
-        print('||    2. Tampilkan Sayur Berdasarkan Urutan Nama ||')
-        print('||    3. Cari Sayur dan Ganti Harga              ||')
+        print('||    1. Urut berdasarkan Stok                   ||')
+        print('||    2. Urut berdasarkan Nama                   ||')
+        print('||    3. Ganti Harga                             ||')
         print('||    4. Tambah Sayur                            ||')
         print('||    5. Hapus Sayur                             ||')
-        print('||    6. Tambah Stock                            ||')
+        print('||    6. Tambah Stok                             ||')
         print('||    7. Kembali                                 ||')
+        print('||-----------------------------------------------||')
+        print('||    n. Next Page | p. Prev Page | m. Pilih Menu||')
         print('+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+')
-        pilihan = input('Silahkan pilih menu: ').strip()
 
-        if pilihan == '1':
-            data = sort_stock(data)
-            min_5(data)
+        opsi = input("Masukkan pilihan: ").strip().lower()
 
-        elif pilihan == '2':
-            data = sort_nama(data)
-            min_5(data)
+        if opsi == 'n' and awal < total_pages - 1:
+            awal += 1
+        elif opsi == 'p' and awal > 0:
+            awal -= 1
+        elif opsi == 'm':
+            pilihan = input("\nMasukkan angka menu (1–7): ").strip()
 
-        elif pilihan == '3':
-            data = sort_nama(data)
-            min_5(data)
-            target = input("\nMasukkan nama sayur: ").strip()
-            index = cari_nama(data, target)
-            if index != -1:
-                sayur = data[index]
-                harga_baru = input("Masukkan harga baru: ").strip()
-                if harga_baru.isdigit():
-                    update_harga(sayur[0], int(harga_baru))
-                    data = sort_id (data_full())
-                else:
-                    print("❌ Harga tidak valid.")
-            else:
-                print("❌ Sayur tidak ditemukan.")
+            if pilihan == '1':
+                data = sort_data(data, 'stok')
+                awal = 0
 
-        elif pilihan == '4':
-            nama = input("Masukkan nama sayur: ").strip()
-            stok = input("Masukkan stok: ").strip()
-            harga = input("Masukkan harga satuan: ").strip()
-            if stok.isdigit() and harga.isdigit():
-                tambah_sayur(nama, int(stok), int(harga))
-                data = sort_id (data_full())
-            else:
-                print("❌ Input stok atau harga tidak valid.")
+            elif pilihan == '2':
+                data = sort_data(data, 'nama')
+                awal = 0
 
-        elif pilihan == '5':
-            clear_terminal()
-            data = sort_id(data_full())
-            min_5(data)
-            id_del = input("\nMasukkan ID sayur yang ingin dihapus: ").strip()
-            if id_del.isdigit():
-                id_del = int(id_del)
-                say = None
-                for item in data:
-                    if item[0] == id_del:
-                        say = item
-                        break
-                if say:
-                    print("\n✅ Sayur yang akan dihapus:")
-                    konfirmasi = input("Yakin ingin menghapus? (y/n): ").strip().lower()
-                    if konfirmasi == 'y':
-                        hapus_sayur(id_del)
+            elif pilihan == '3':
+                data = sort_data(data, 'nama')
+                target = input("\nMasukkan nama sayur: ").strip()
+                index = cari_nama(data, target)
+                if index != -1:
+                    sayur = data[index]
+                    harga_baru = input("Masukkan harga baru: ").strip()
+                    if harga_baru.isdigit():
+                        update_harga(sayur[0], int(harga_baru))
                     else:
-                        print("❌ Dibatalkan.")
+                        print("❌ Harga tidak valid.")
                 else:
-                    print("❌ ID tidak ditemukan.")
-            else:
-                print("❌ ID tidak valid.")
+                    print("❌ Sayur tidak ditemukan.")
+                input("Tekan Enter untuk lanjut...")
 
-        elif pilihan == '6':
-            clear_terminal()
-            data = sort_id(data_full())
-            min_5(data)
-            id_sayur = input("\nMasukkan ID sayur yang ingin ditambah stok: ").strip()
-            if id_sayur.isdigit():
-                id_sayur = int(id_sayur)
-                say1 = None
-                for item in data:
-                    if item[0] == id_sayur:
-                        say1 = item
-                        break
-                if say1:
-                    print("\n✅ Sayur yang dipilih:")
-                    print(tabulate([say1], headers=["ID", "Nama", "Stok", "Harga"], tablefmt="fancy_grid"))
-                    tambahan = input("Masukkan jumlah stok tambahan: ").strip()
+            elif pilihan == '4':
+                nama = input("Masukkan nama sayur: ").strip()
+                stok = input("Masukkan stok: ").strip()
+                harga = input("Masukkan harga satuan: ").strip()
+                if stok.isdigit() and harga.isdigit():
+                    tambah_sayur(nama, int(stok), int(harga))
+                else:
+                    print("❌ Input tidak valid.")
+                input("Tekan Enter untuk lanjut...")
+
+            elif pilihan == '5':
+                id_del = input("Masukkan ID sayur yang ingin dihapus: ").strip()
+                if id_del.isdigit():
+                    hapus_sayur(int(id_del))
+                else:
+                    print("❌ ID tidak valid.")
+                input("Tekan Enter untuk lanjut...")
+
+            elif pilihan == '6':
+                data = sort_data(data, 'nama')
+                target = input("Masukkan nama sayur yang ingin ditambah stok: ").strip()
+                index = cari_nama(data, target)
+                if index != -1:
+                    tambahan = input("Masukkan jumlah tambahan stok: ").strip()
                     if tambahan.isdigit():
-                        tambah_stok(id_sayur, int(tambahan))
-                        data = sort_id(data_full())
-                        kembali()
+                        tambah_stok(data[index][0], int(tambahan))
                     else:
-                        print("❌ Jumlah stok tidak valid.")
+                        print("❌ Jumlah tidak valid.")
                 else:
-                    print("❌ ID tidak ditemukan.")
-            else:
-                print("❌ ID tidak valid.")
+                    print("❌ Sayur tidak ditemukan.")
+                input("Tekan Enter untuk lanjut...")
 
-        elif pilihan == '7':
+            elif pilihan == '7':
+                break
+
+            else:
+                print("❌ Pilihan tidak valid.")
+                input("Tekan Enter untuk lanjut...")
+
+        elif opsi == '7':
             break
         else:
-            print("❌ Pilihan tidak valid.")
+            print("❌ Input tidak valid. Gunakan n, p, m, atau 1–7.")
+            input("Tekan Enter untuk lanjut...")
+
+
+# def min_5(data):
+#     per_page = 5
+#     total = len(data)
+#     pages = (total + per_page - 1) // per_page
+#     current = 0
+#     while True:
+#         clear_terminal()
+#         print(tabulate(data[current * per_page: (current + 1) * per_page], headers=["ID", "Nama", "Stok", "Harga"], tablefmt="fancy_grid"))
+#         print(f"\nPage {current + 1} of {pages}")
+#         print("\n1. Next Page | 2. Prev Page | 0. Exit View")
+#         cmd = input("Pilih opsi: ")
+#         if cmd == "1" and current < pages - 1:
+#             current += 1
+#         elif cmd == "2" and current > 0:
+#             current -= 1
+#         elif cmd == "0":
+#             break
+
+# def sort_stock(data):
+#     n = len(data)
+#     for i in range(n):
+#         indek_min = i
+#         for j in range(i + 1, n):
+#             if data[j][2] < data[indek_min][2]:
+#                 indek_min = j
+#         data[i], data[indek_min] = data[indek_min], data[i]
+#     return data
+
+# def sort_id(data):
+#     n = len(data)
+#     for i in range(n):
+#         indek_min = i
+#         for j in range(i + 1, n):
+#             if data[j][0] < data[indek_min][0]:
+#                 indek_min = j
+#         data[i], data[indek_min] = data[indek_min], data[i]
+#     return data
+
+# def sort_nama(data):
+#     n = len(data)
+#     for i in range(n):
+#         index_min = i
+#         for j in range(i + 1, n):
+#             if data[j][1].lower() < data[index_min][1].lower():
+#                 index_min = j
+#         data[i], data[index_min] = data[index_min], data[i]
+#     return data
+
+# def pengelolaan_stok():
+#     data = data_full()
+#     while True:
+#         clear_terminal()
+#         min_5(data)
+#         # data_full(data_sorted)
+#         print('+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+')
+#         print('|| ^^^ 	      MENU PENGELOLAAN STOK          ^^^ ||')
+#         print('||---------    Silahkan pilih menu      ---------||')
+#         print('||    1. Tampilkan Sayur Berdasar Stok           ||')
+#         print('||    2. Tampilkan Sayur Berdasarkan Urutan Nama ||')
+#         print('||    3. Cari Sayur dan Ganti Harga              ||')
+#         print('||    4. Tambah Sayur                            ||')
+#         print('||    5. Hapus Sayur                             ||')
+#         print('||    6. Tambah Stock                            ||')
+#         print('||    7. Kembali                                 ||')
+#         print('+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+:+')
+#         pilihan = input('Silahkan pilih menu: ').strip()
+
+#         if pilihan == '1':
+#             data = sort_stock(data)
+#             min_5(data)
+
+#         elif pilihan == '2':
+#             data = sort_nama(data)
+#             min_5(data)
+
+#         elif pilihan == '3':
+#             data = sort_nama(data)
+#             min_5(data)
+#             target = input("\nMasukkan nama sayur: ").strip()
+#             index = cari_nama(data, target)
+#             if index != -1:
+#                 sayur = data[index]
+#                 harga_baru = input("Masukkan harga baru: ").strip()
+#                 if harga_baru.isdigit():
+#                     update_harga(sayur[0], int(harga_baru))
+#                     data = sort_id (data_full())
+#                 else:
+#                     print("❌ Harga tidak valid.")
+#             else:
+#                 print("❌ Sayur tidak ditemukan.")
+
+#         elif pilihan == '4':
+#             nama = input("Masukkan nama sayur: ").strip()
+#             stok = input("Masukkan stok: ").strip()
+#             harga = input("Masukkan harga satuan: ").strip()
+#             if stok.isdigit() and harga.isdigit():
+#                 tambah_sayur(nama, int(stok), int(harga))
+#                 data = sort_id (data_full())
+#             else:
+#                 print("❌ Input stok atau harga tidak valid.")
+
+#         elif pilihan == '5':
+#             clear_terminal()
+#             data = sort_id(data_full())
+#             min_5(data)
+#             id_del = input("\nMasukkan ID sayur yang ingin dihapus: ").strip()
+#             if id_del.isdigit():
+#                 id_del = int(id_del)
+#                 say = None
+#                 for item in data:
+#                     if item[0] == id_del:
+#                         say = item
+#                         break
+#                 if say:
+#                     print("\n✅ Sayur yang akan dihapus:")
+#                     konfirmasi = input("Yakin ingin menghapus? (y/n): ").strip().lower()
+#                     if konfirmasi == 'y':
+#                         hapus_sayur(id_del)
+#                     else:
+#                         print("❌ Dibatalkan.")
+#                 else:
+#                     print("❌ ID tidak ditemukan.")
+#             else:
+#                 print("❌ ID tidak valid.")
+
+#         elif pilihan == '6':
+#             clear_terminal()
+#             data = sort_id(data_full())
+#             min_5(data)
+#             id_sayur = input("\nMasukkan ID sayur yang ingin ditambah stok: ").strip()
+#             if id_sayur.isdigit():
+#                 id_sayur = int(id_sayur)
+#                 say1 = None
+#                 for item in data:
+#                     if item[0] == id_sayur:
+#                         say1 = item
+#                         break
+#                 if say1:
+#                     print("\n✅ Sayur yang dipilih:")
+#                     print(tabulate([say1], headers=["ID", "Nama", "Stok", "Harga"], tablefmt="fancy_grid"))
+#                     tambahan = input("Masukkan jumlah stok tambahan: ").strip()
+#                     if tambahan.isdigit():
+#                         tambah_stok(id_sayur, int(tambahan))
+#                         data = sort_id(data_full())
+#                         kembali()
+#                     else:
+#                         print("❌ Jumlah stok tidak valid.")
+#                 else:
+#                     print("❌ ID tidak ditemukan.")
+#             else:
+#                 print("❌ ID tidak valid.")
+
+#         elif pilihan == '7':
+#             break
+#         else:
+#             print("❌ Pilihan tidak valid.")
 
 main()
