@@ -475,7 +475,7 @@ def tambah_sayur(nama, stok, harga):
     conn = connect_db()
     cur = conn.cursor()
     try:
-        cur.execute("INSERT INTO sayur (nama, stok, harga_satuan) VALUES (%s, %s, %s)", (nama, stok, harga))
+        cur.execute("INSERT INTO sayur (nama_sayur, stok, harga_satuan) VALUES (%s, %s, %s)", (nama, stok, harga))
         conn.commit()
         print("✅ Sayur berhasil ditambahkan.")
     except Exception as e:
